@@ -2,6 +2,8 @@ const BASE_URL = "https://xcx.myinyun.com:4438";
 const TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6IjEzNzI1ODg3Mjk0IiwiZGV2aWNlSWQiOiJFN0Q5QzVEQy0wMjA4LTQ1NTgtQUFFMS04NEI5NjdBNDBCNzIiLCJsb2dpblRpbWUiOjE3Njg0NjM4NzkyNDYsImlhdCI6MTc2ODQ2Mzg3OX0.TAG9c7ZjH7LoRbQcPht8_uLx3Fm1232ouIMk7xkJFNg";
 const USER_AGENT = "Mozilla/5.0 (iPhone; CPU iPhone OS 26_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 MicroMessenger/8.0.70(0x18004633) NetType/4G Language/zh_CN";
 const REFERER = "https://servicewechat.com/wxa25139b08fe6e2b6/23/page-frame.html";
+const MAX_FLOWER_TIMES = 5;
+const MAX_GIFT_TIMES = 5;
 
 function notify(title, subtitle, body) {
   if (typeof $notification !== "undefined") {
@@ -59,36 +61,45 @@ async function drawGift() {
   return await getJSON("PUT", "/napi/gift", "{}");
 }
 
-async function runFlower() {
-  const flowerTime = await getFlowerTime();
-  if (flowerTime !== true) {
-    return "小红花今日不可领取或已领取";
+async function runFlowerLoop() {
+  let success = 0;
+  for (let i = 0; i < MAX_FLOWER_TIMES; i++) {
+    const flowerTime = await getFlowerTime();
+    if (flowerTime !== true) break;
+    const result = await claimFlower();
+    if (result === true) {
+      success += 1;
+    } else {
+      return `小红花中断：${JSON.stringify(result)}`;
+    }
   }
-  const result = await claimFlower();
-  if (result === true) {
-    return "小红花领取成功";
-  }
-  return `小红花结果：${JSON.stringify(result)}`;
+  if (success === 0) return "小红花今日不可领取或已领取";
+  return `小红花领取成功 ${success} 次`;
 }
 
-async function runGift() {
-  const remain = await getRemainGiftNum();
-  const count = Number(remain?.data || 0);
-  if (count <= 0) {
-    return "每日抽奖今日已完成";
+async function runGiftLoop() {
+  let success = 0;
+  const prizes = [];
+  for (let i = 0; i < MAX_GIFT_TIMES; i++) {
+    const remain = await getRemainGiftNum();
+    const count = Number(remain?.data || 0);
+    if (count <= 0) break;
+    const result = await drawGift();
+    const prize = result?.data || {};
+    const prizeName = prize.prizeName || "抽奖完成";
+    const prizeNum = prize.prizeNum != null ? ` ×${prize.prizeNum}` : "";
+    prizes.push(`${prizeName}${prizeNum}`);
+    success += 1;
   }
-  const result = await drawGift();
-  const prize = result?.data || {};
-  const prizeName = prize.prizeName || "抽奖完成";
-  const prizeNum = prize.prizeNum != null ? ` ×${prize.prizeNum}` : "";
-  return `每日抽奖成功：${prizeName}${prizeNum}`;
+  if (success === 0) return "每日抽奖今日已完成";
+  return `每日抽奖成功 ${success} 次：${prizes.join("；")}`;
 }
 
 async function main() {
   try {
     const messages = [];
-    messages.push(await runFlower());
-    messages.push(await runGift());
+    messages.push(await runFlowerLoop());
+    messages.push(await runGiftLoop());
     notify("声荐小助手", "每日任务完成", messages.join("\n"));
   } catch (e) {
     notify("声荐小助手", "每日任务失败", String(e));
