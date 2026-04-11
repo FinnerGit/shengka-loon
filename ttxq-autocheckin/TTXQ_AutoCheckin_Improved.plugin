@@ -1,0 +1,282 @@
+// 天天象棋自动签到插件 v1.0
+// 根据实际抓包记录生成
+// 使用方法：在LOON中安装后，每天自动执行或手动运行
+
+const $ = $substore;
+
+// 调试模式，设置为false关闭日志
+const DEBUG = true;
+
+function log(...args) {
+    if (DEBUG) {
+        console.log(`[天天象棋]`, ...args);
+    }
+}
+
+// API配置
+const API_CONFIG = {
+    host: "szextshort.weixin.qq.com",
+    baseHeaders: {
+        "Accept": "*/*",
+        "Cache-Control": "no-cache",
+        "Connection": "Keep-Alive",
+        "Content-Type": "application/octet-stream",
+        "Host": "szextshort.weixin.qq.com",
+        "Upgrade": "mmtls",
+        "User-Agent": "MicroMessenger Client"
+    }
+};
+
+// 签到请求配置
+const CHECKIN_REQUESTS = [
+    {
+        id: 1,
+        name: "签到请求1",
+        method: "POST",
+        path: "/mmtls/4e3f9f89",
+        bodyBase64: "GfEEAKEAAACdAQTxAQCo2bKqzYbFDrVG0yYddAULvopFhlOlRHFCuQq8hnZY5zJp2Z6pAAAAbwEAAABqAA8BAAAAYwEACTqAAAAAAABIAAwsu/jO+j3QpPuIsiIASF6N4xCBFWEmVrpXwZ+1Onw96wm5QNP6STKwZ3L28Z9/ZkewUDhfNOISE2103kAtxM4+cFoRDRM+ZEUnZxciRCxTkfs9qZVrDhnxBAAkK1sDvliORhtf8iqXhNqyhhp6chTzq49vvbUv4S+VhQJZ8qieF/EEAXG0P8xqlXAzhveNOE4ORoUVpeue1BK88m/XLfHDG4ryb1E/rKqvFt2gSG2CeJCwfe2es6V/4wP1i7Wujj7DSUD50bvb9w1jmblY2UMpf6yrFLJ8PfqZs6fVTQY9xIbhfF5Mp8gEPeQOGuO8auIhasaVF29UIkvSimwuFux7kbe7/BZvtsLcHCRgd4YU1eFUwk+DsbBRJTS+JZHvn+A0+HG0KQTNURfzxJTaAcrs4WIEzlFno/2VGm+FxogKqVw4qo5bre8MfzOpc+Jin1NEE+tKx783U6VW0ZGuytEPiRydK22o3axqVXF4qv5Nh7wAnr5m7st40yUIbiP3otM3XVgNXN0VxWBNfLUb9uQFSXx1IJCEOqC0HUln8kMSYkiuFMDErBlc3GC3+oSFbkBl3Zkzh8DQLKNiEJ++/EWNhGqMzIskIrPtUuSxF0ySVj8bZVwJ7evDKGTDZUm5YY5M+ISmkx3CWa24WK/PG3wfBxpHVkUV8QQAF2bZb/4iFtO3tmmCfu/xeo1C+JtoFSw/",
+        description: "请求体大小: 609字节, 时间戳: 1775869609241"
+    },
+    {
+        id: 2,
+        name: "签到请求2",
+        method: "POST",
+        path: "/mmtls/4e4a64ef",
+        bodyBase64: "GfEEAKEAAACdAQTxAQCoxes5GF12HCkvQetpuZZwSZ0akRbkOZ52722qOMhjNA9p2Z7TAAAAbwEAAABqAA8BAAAAYwEACTqAAAAAAABIAAwsu/jO+j3QpPuIsiIASF6N4xCBFWEmVrpXwZ+1Onw96wm5QNP6STKwZ3L28Z9/ZkewUDhfNOISE2103kAtxM4+cFoRDRM+ZEUnZxciRCxTkfs9qZVrDhnxBAAkxVnXkVCrwtIQaUFcurlV/W2TzhoMo1VPls49fmhVrVcsfG9vF/EEAXExDWdyF1Ot8JW9g2OLiPhp/UU6zajBySp7wGM+48i9sLINKbTAgWdsm4gJEx7KBbmVNPoVZO2rCDgLho8vjlJ0waJFjC3t1QxMm4zJWL0Isg1pRpgNHseEO8lgk7GDGApLpK8rTMj8QodWXhXGjK6klos6eDwhgdCg2lni2jPDHc6ILlyw3SWSBE5F6PbwPyobe3Q2A2wIQXebTK6bejyjkAsDh8ioAwWzsgH7dXl3iyp3oFop93ZuxYxx7cfNQYJ2Nm2SnyNrQrqAMeVdLVGBN/lgEvgYlt9wC3Ex1EEIgxEG2PPJCHFxIj2HhIDutYOT4rvGGoYZN6R/fb9wCnF8cql1BEoQ6SF+stKXSTCv8qUw93uu7cDBjxeVcoDNJ+dktZCGjvoHDAq50bfWRBvEirI2v84blziJ+1Ery6UFyn0aob5/omcbYPuy6pEOfWSPCR2VzeClMdDrvX2loa1iL7vSYV5nrkGv6NewjChi4tsV8QQAF9HOMXTkYJ29bn4EuujA5l4tTRecwT7J",
+        description: "请求体大小: 609字节, 时间戳: 1775869651662"
+    },
+    {
+        id: 3,
+        name: "签到请求3",
+        method: "POST",
+        path: "/mmtls/4e48995e",
+        bodyBase64: "GfEEAKEAAACdAQTxAQCo58pCl4rsPRmsNnnIvidzxVAZftAgE/73sQg7nBQ1t8tp2Z7MAAAAbwEAAABqAA8BAAAAYwEACTqAAAAAAABIAAwsu/jO+j3QpPuIsiIASF6N4xCBFWEmVrpXwZ+1Onw96wm5QNP6STKwZ3L28Z9/ZkewUDhfNOISE2103kAtxM4+cFoRDRM+ZEUnZxciRCxTkfs9qZVrDhnxBAAk4bsCcrj/8Xj8uW8KIdPBecis8OfJFyw44LpU+OIsxgmiMfBhF/EEAXzhC04fVmDV3xu6gBh6FRNUu+VtyabwdVXKL0isnZAboQ1U3eohhikoJ2SOv+Pz772D4p4YEyiYM6Gvoe0/XzmwPUOK9vDr3hKoF+kEII4lN5PmKzVDUl9AMdBZYhEv+yX1tFE5o10LXXAlfh9VSEwalOWE32/+GGD3wRVJbcUnEw3vnu0e5Lm//G7q/D39CT53nkcpqnN9WWUeVsBEWAvFi/4OztdurK/GhF0wDvS16WIUJjvV1nEZibDklHDlOXJ5gWGyHMf9oILTHIecsDjVJgMMoFG/EvteDyHGpmyXJ/HXjF9fKIWy8fN92bI0nkUqSspjgFue0WTKP8CpWddQcquNEL714DPJTtjvWe9FNThuv5rcS+BqCfsAeiWPF4wdH/YCBAkhci5yKdLjcLwMoaVZ9awb25BJL5d0cs8igNx//zhLcamWy1qsiK/HKJ6z01507mhU3ifx9yG/enAlrki0sXBPfBQFEIn0YT8uZqTbcuVFcrVfBHV27RXxBAAXV5Eq1Om4WT2fBbgf3LYDtnIfQmSagao=",
+        description: "请求体大小: 620字节, 时间戳: 1775869644283"
+    },
+    {
+        id: 4,
+        name: "签到请求4",
+        method: "POST",
+        path: "/mmtls/4e535ec4",
+        bodyBase64: "GfEEAKEAAACdAQTxAQCoDX2Xl2CIb4N1KvsDC++v+7rzHVA39HhB9fdvfbi69NNp2Z72AAAAbwEAAABqAA8BAAAAYwEACTqAAAAAAABIAAwsu/jO+j3QpPuIsiIASF6N4xCBFWEmVrpXwZ+1Onw96wm5QNP6STKwZ3L28Z9/ZkewUDhfNOISE2103kAtxM4+cFoRDRM+ZEUnZxciRCxTkfs9qZVrDhnxBAAk5IjdJyB+UWOvatODFsQfIghDW/BjEA933O17A2wC7jTS78QJF/EEAXyl9/o5Dk19YOsxcW4XZF/IooYIMFQjrMahZOlDU55Ug92cdFQj/w/sI8IQbrlnQPTvnAHTWygKQPLoYyOMzDFRm8OwHL9tAJSfARX1d/lpaEN+IgSWnxRX52bwFusAVoOwJOzbX0ZoZyKwzb5wSTG3qwWyOPtzrRBM1sjGckciRpDJKcx8KVPLGrOtJDcpNnWK9EM2qQkHFa6nAGdReVxfvyRd3oXpPhQ0DYARR5eba6nJo9hWLyf44+45poeyy0D2dFawfx2NFTAmbb8Iv1aGGPkkQetdsMKt0i+bZMJfzc2vKJpWPBy8UIsErSeKM/QnEhXVCKPnKfIGPiiTDtXBg3VYMBtK1pTcZT5s7XsNuYzxv6vYHzYukkgiIGsKWgBeK1xj0xz++NfMGLHnejA0vSboJkKaiwibyaQkIpiFTjBISeDWt7q/TIX2WSGKCwCaeiT1fFKnnZXPRx59Q9MxofSiB7k15kfQ2SbCwUF3VmvRhPHoSKcN56YeiRXxBAAXHgvMsp8+WpaY5/Hf2bVWqdVLDhNRXl4=",
+        description: "请求体大小: 620字节, 时间戳: 1775869686675"
+    },
+    {
+        id: 5,
+        name: "签到请求5",
+        method: "POST",
+        path: "/mmtls/4e71a1be",
+        bodyBase64: "GfEEAKEAAACdAQTxAQCoyWHrnyIrE3pN3BW12egjvZ4Ncn2ycAI2gGSHh+3dFDZp2Z9sAAAAbwEAAABqAA8BAAAAYwEACTqAAAAAAABIAAwsu/jO+j3QpPuIsiIASF6N4xCBFWEmVrpXwZ+1Onw96wm5QNP6STKwZ3L28Z9/ZkewUDhfNOISE2103kAtxM4+cFoRDRM+ZEUnZxciRCxTkfs9qZVrDhnxBAAk5platjwpMOQ7eyrU+rlQsJOCBpsB8XbzubtDlGBoNW+PyTnsF/EEAc/kgMcqiVSWo5fCcDdhPJm2yqiRFTFlkKiqaTOVBzWcCWlslJUcE+7ArauJ6LMhbUmv755sf0W5/z/aCCJpGGlwOA0k3NZg73yibL7OuYuU22jxxZ5tSEsYLkIc8K4b0xqTakmoTXnAGf0grJ0/JbM7vCvFD6/VBZE5jzxBs8aeEpECvmslbVrQgjv+abGxUfVtHe0XXx665kma9pugL4dDF/vPnHh3a5l8LfXOEkaFMG5tjmHSM0hFnJZ/GmVEZD2ZY5QMIVshY3iS0dLNyTvMDu1k2RvlzRJCrhSadwwwtxJII1vLaeRlgrqzWb0lL3guOa1j2MjyKTZWsYNslitwjRWJO/L1jIc7KIjfMnY2rN/ENtWuE24TW6KSM+VpZkkPf+KDOGZ5PYgdCcMbv0QK5s1wd6xZQI2XQvbxhJrusQjKEvUd6j9ovPsgh/cCZBZGf7xkIQli1hRQ1/8vAlTst9D4A0TtL+6Ai7p8aWhL2R4YBJhdpZ80aZ3s5bo0LtjM2l+Ieu/rNsRyl5LRhWZE1rEWGpe5mLaNMRuHHN/COeh/ydo34RzeE6nEh+SB/o+j2MvswX4GbQS5BcRf/LqcZI8szr4PrNHBxo91Yf3tFfEEABeL5eohN8tApjuhy4bJA3Eo/rwvbWI1PA==",
+        description: "请求体大小: 703字节, 时间戳: 1775869804392"
+    },
+    {
+        id: 6,
+        name: "签到请求6",
+        method: "POST",
+        path: "/mmtls/4e732ba8",
+        bodyBase64: "GfEEAKEAAACdAQTxAQComzHiqS3X4t5MbfC6bkh48oIvR1+wA5nNs02GXg8cdNdp2Z9yAAAAbwEAAABqAA8BAAAAYwEACTqAAAAAAABIAAwsu/jO+j3QpPuIsiIASF6N4xCBFWEmVrpXwZ+1Onw96wm5QNP6STKwZ3L28Z9/ZkewUDhfNOISE2103kAtxM4+cFoRDRM+ZEUnZxciRCxTkfs9qZVrDhnxBAAkPAJK8rt6jKstiw9cJk/un542mDeVCIuEwgX4RprTQ2joqCL1F/EEAc+XglbkPgIsjOeZqxkqEKRiAkLtmQZq2bztYvNcG7V2vwS1OJu4qAXIHHBrZyPK5/1N3+pN9fjGd0qx55NXuCqJv9AoZOhZ+IPZIkdYxOox8qtZLTwRwVnovtW5sQ1zK8EjCBowREd9blsfMW8JHzxNXZc64JeU89ugdKXHgzKAjZLKd/+H5ytmtGGDpRFOyJO3xfm3tRfgCU4axpo0MdnEtUifg312q86XrSm0ONkE+Q+r6h3X15RDMxz6EM/yya9JpUZ6U9RLkHOf/EzeMs6XTSpKwFNiJyQJR6ycZDgTX7f/9pAJYTq4W6jP0+EsKJR/T/hLcf+TuwbTCC0Vytj5M7WNJvyDZ1eA/XQx3/7YPKPcCQyHSgSHu1tyMy0lKR8wQAZprX4QzKVrFwdVqDiRJIDXA5JfCnTh1RXdbZ0nrVSt4ejqljUaBsvVZvEGP0YOw4pRctaS8Q/8SPvXkgPOHHWiSqyxMPQCkw/3i/hE7unJaSiXviqlRzZeUieNCwzvtPzICgHGLmyGrqMeamidnZkaJC/CoJDkI5LhB+Xv+gOhy0UtSoqEYB+R0DAbGyu+D0NPeS/unadTrhwcrZY93y6RpLSe961+XQwpBpw8FfEEABetfB4PZKGRMOoHrRRZnwZQEXLZRHyV9g==",
+        description: "请求体大小: 703字节, 时间戳: 1775869810160"
+    },
+];
+
+// Base64解码函数（兼容LOON环境）
+function decodeBase64(base64Str) {
+    try {
+        // 方法1: 使用atob（浏览器环境）
+        if (typeof atob !== 'undefined') {
+            const binaryStr = atob(base64Str);
+            const bytes = new Uint8Array(binaryStr.length);
+            for (let i = 0; i < binaryStr.length; i++) {
+                bytes[i] = binaryStr.charCodeAt(i);
+            }
+            return bytes.buffer;
+        }
+        
+        // 方法2: 使用Buffer（Node.js环境）
+        if (typeof Buffer !== 'undefined') {
+            return Buffer.from(base64Str, 'base64');
+        }
+        
+        // 方法3: 直接返回字符串（备用）
+        log("无法解码Base64，使用原始字符串");
+        return base64Str;
+    } catch (error) {
+        log(`Base64解码失败: ${error}`);
+        return base64Str;
+    }
+}
+
+// 执行单个请求
+async function executeRequest(requestConfig) {
+    try {
+        const url = `https://${API_CONFIG.host}${requestConfig.path}`;
+        
+        log(`执行请求: ${requestConfig.name}`);
+        log(`URL: ${url}`);
+        log(`方法: ${requestConfig.method}`);
+        
+        const headers = { ...API_CONFIG.baseHeaders };
+        
+        // 准备请求选项
+        const options = {
+            url: url,
+            method: requestConfig.method,
+            headers: headers,
+            timeout: 15000
+        };
+        
+        // 处理请求体
+        if (requestConfig.bodyBase64) {
+            try {
+                const bodyBytes = decodeBase64(requestConfig.bodyBase64);
+                if (bodyBytes instanceof ArrayBuffer || bodyBytes instanceof Uint8Array) {
+                    // 对于二进制数据，使用bodyBytes
+                    options.bodyBytes = bodyBytes;
+                } else {
+                    // 备用方案：直接使用base64字符串
+                    options.body = requestConfig.bodyBase64;
+                }
+                log(`请求体大小: ${requestConfig.bodyBase64.length}字符（Base64）`);
+            } catch (error) {
+                log(`请求体处理失败: ${error}`);
+                options.body = requestConfig.bodyBase64;
+            }
+        }
+        
+        const startTime = Date.now();
+        const response = await $.http.request(options);
+        const elapsedTime = Date.now() - startTime;
+        
+        log(`请求完成，状态码: ${response.statusCode}, 耗时: ${elapsedTime}ms`);
+        
+        // 检查响应
+        if (response.statusCode >= 200 && response.statusCode < 300) {
+            log(`请求成功`);
+            
+            // 尝试分析响应
+            if (response.body && response.body.length > 0) {
+                log(`响应长度: ${response.body.length}字节`);
+                
+                // 如果是文本响应，尝试显示部分内容
+                if (typeof response.body === 'string') {
+                    const preview = response.body.substring(0, 200);
+                    log(`响应预览: ${preview}...`);
+                }
+            }
+            
+            return {
+                success: true,
+                statusCode: response.statusCode,
+                elapsedTime: elapsedTime
+            };
+        } else {
+            log(`请求失败，状态码: ${response.statusCode}`);
+            return {
+                success: false,
+                statusCode: response.statusCode,
+                elapsedTime: elapsedTime
+            };
+        }
+        
+    } catch (error) {
+        log(`请求异常: ${error}`);
+        return {
+            success: false,
+            error: String(error)
+        };
+    }
+}
+
+// 执行所有签到请求
+async function executeAllCheckins() {
+    log("开始执行天天象棋签到流程");
+    log(`总共 ${CHECKIN_REQUESTS.length} 个请求需要执行`);
+    
+    const results = [];
+    let successCount = 0;
+    let failCount = 0;
+    
+    for (let i = 0; i < CHECKIN_REQUESTS.length; i++) {
+        const requestConfig = CHECKIN_REQUESTS[i];
+        
+        log(`\n[${i + 1}/${CHECKIN_REQUESTS.length}] 执行: ${requestConfig.name}`);
+        
+        const result = await executeRequest(requestConfig);
+        results.push(result);
+        
+        if (result.success) {
+            successCount++;
+        } else {
+            failCount++;
+        }
+        
+        // 请求之间延迟，模拟真实操作
+        if (i < CHECKIN_REQUESTS.length - 1) {
+            log(`等待1秒后执行下一个请求...`);
+            await $.wait(1000);
+        }
+    }
+    
+    log(`\n签到流程完成`);
+    log(`成功: ${successCount}, 失败: ${failCount}, 总计: ${CHECKIN_REQUESTS.length}`);
+    
+    return {
+        results: results,
+        successCount: successCount,
+        failCount: failCount,
+        total: CHECKIN_REQUESTS.length
+    };
+}
+
+// 主函数
+async function main() {
+    log("=== 天天象棋自动签到插件 ===");
+    
+    const startTime = Date.now();
+    const result = await executeAllCheckins();
+    const totalTime = Date.now() - startTime;
+    
+    log(`\n总执行时间: ${totalTime}ms`);
+    
+    // 生成通知
+    const title = "天天象棋签到";
+    let subtitle = `完成 ${result.successCount}/${result.total}`;
+    let message = `执行时间: ${totalTime}ms\n`;
+    
+    if (result.failCount === 0) {
+        subtitle = "签到成功";
+        message += `所有请求执行成功！`;
+    } else if (result.successCount > 0) {
+        subtitle = `部分成功 (${result.successCount}/${result.total})`;
+        message += `${result.successCount}个成功, ${result.failCount}个失败`;
+    } else {
+        subtitle = "签到失败";
+        message += `所有请求都失败了，请检查网络或配置`;
+    }
+    
+    message += `\n\n详细日志请查看LOON日志面板`;
+    
+    // 发送通知
+    $.msg(title, subtitle, message);
+    
+    return result;
+}
+
+// LOON插件接口
+if (typeof $argument !== "undefined") {
+    // 通过参数触发（手动执行）
+    main().then(result => {
+        $done({});
+    }).catch(error => {
+        log(`插件执行错误: ${error}`);
+        $.msg("天天象棋签到", "执行错误", String(error));
+        $done({});
+    });
+} else {
+    // 通过定时任务触发
+    exports.cron = "0 9 * * *"; // 每天上午9点执行
+    exports.handler = main;
+}
+
+// 导出函数供其他脚本调用
+exports.executeCheckin = main;

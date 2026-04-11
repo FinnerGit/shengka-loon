@@ -1,0 +1,574 @@
+// 天天象棋自动签到插件
+// 根据抓包记录自动生成
+// 支持每日签到和多个奖励领取
+
+const $ = $substore;
+
+// 调试开关
+const DEBUG = true;
+
+function log(...args) {
+    if (DEBUG) {
+        console.log(`[天天象棋]`, ...args);
+    }
+}
+
+// 请求配置
+const API_CONFIG = {
+    host: "szextshort.weixin.qq.com",
+    headers: {
+        "Accept": "*/*",
+        "Cache-Control": "no-cache",
+        "Connection": "Keep-Alive",
+        "Content-Type": "application/octet-stream",
+        "Host": "szextshort.weixin.qq.com",
+        "Upgrade": "mmtls",
+        "User-Agent": "MicroMessenger Client"
+    }
+};
+
+// 从抓包记录中提取的请求模板
+const REQUEST_TEMPLATES = [
+    {
+        // 请求模式: POST /mmtls/4e3f9f89
+        // 出现次数: 14次，大小: [609, 800, 808, 810, 811, 818, 872, 873, 907, 1065, 1524, 1544]
+        method: "POST",
+        path: "/mmtls/4e3f9f89",
+        body: "GfEEAKEAAACdAQTxAQCo8XkGzr3BsbMHpYgUNmixXWJ2DSFz28sH3eAVyatxV7Rp2Z6pAAAAbwEAAABqAA8BAAAAYwEACTqAAAAA...", // Base64编码的请求体（示例）
+        size: 1544
+    },
+    {
+        // 请求模式: POST /mmtls/4e981998
+        // 出现次数: 4次，大小: [703, 898, 953, 1004]
+        method: "POST",
+        path: "/mmtls/4e981998",
+        body: "GfEEAKEAAACdAQTxAQCohcGrJmaPIt87lc/hlymOarTgMfjnPx7DdJuZ/+aFH7tp2aACAAAAbwEAAABqAA8BAAAAYwEACTqAAAAA...", // Base64编码的请求体（示例）
+        size: 1004
+    },
+    {
+        // 请求模式: POST /mmtls/4e3f5de2
+        // 出现次数: 11次，大小: [702, 823, 904, 905, 906, 908, 910, 1555]
+        method: "POST",
+        path: "/mmtls/4e3f5de2",
+        body: "GfEEAKEAAACdAQTxAQCoUw8MPI0vJJ9uFh5ZCaHC9ABTlWfRFLJ4Ct7xzLGe3Vxp2Z6oAAAAbwEAAABqAA8BAAAAYwEACTqAAAAA...", // Base64编码的请求体（示例）
+        size: 908
+    },
+    {
+        // 请求模式: POST /mmtls/4e7d6dc0
+        // 出现次数: 10次，大小: [620, 701, 814, 815, 872, 873, 1066, 1150, 1283, 1817]
+        method: "POST",
+        path: "/mmtls/4e7d6dc0",
+        body: "GfEEAKEAAACdAQTxAQCoGRabl2U03/ZFi3pHQAKW0fJaY29pC4MSnntLcKY0ED1p2Z+aAAAAbwEAAABqAA8BAAAAYwEACTqAAAAA...", // Base64编码的请求体（示例）
+        size: 815
+    },
+    {
+        // 请求模式: POST /mmtls/4e48995e
+        // 出现次数: 11次，大小: [559, 620, 701, 812, 816, 861, 870, 1058, 1291, 1788]
+        method: "POST",
+        path: "/mmtls/4e48995e",
+        body: "GfEEAKEAAACdAQTxAQCoaa1twI1XLNMSlA9knIlf2POLqzGX1z76qHiu/ipP6TNp2Z7MAAAAbwEAAABqAA8BAAAAYwEACTqAAAAA...", // Base64编码的请求体（示例）
+        size: 816
+    },
+    {
+        // 请求模式: POST /mmtls/4e54a707
+        // 出现次数: 5次，大小: [609, 801, 809, 824, 1525]
+        method: "POST",
+        path: "/mmtls/4e54a707",
+        body: "GfEEAKEAAACdAQTxAQCo2h2m11E584UNjqVlZsdTGI1rWZT38jafXOrsmJfL1E9p2Z77AAAAbwEAAABqAA8BAAAAYwEACTqAAAAA...", // Base64编码的请求体（示例）
+        size: 809
+    },
+    {
+        // 请求模式: POST /mmtls/4e7daf67
+        // 出现次数: 1次，大小: [1273]
+        method: "POST",
+        path: "/mmtls/4e7daf67",
+        body: "GfEEAKEAAACdAQTxAQCopKYQa7tbp91NyJD+IpyOygB2WVlcYV1XUULUE5KRFLxp2Z+bAAAAbwEAAABqAA8BAAAAYwEACTqAAAAA...", // Base64编码的请求体（示例）
+        size: 1273
+    },
+    {
+        // 请求模式: POST /mmtls/4e8939c2
+        // 出现次数: 8次，大小: [609, 801, 809, 821, 899, 907, 1064, 1525]
+        method: "POST",
+        path: "/mmtls/4e8939c2",
+        body: "GfEEAKEAAACdAQTxAQCoKjiKkcpKbIaZ0tnkD1s9VfPtb9WjCrJGZC7kwp98/fxp2Z/IAAAAbwEAAABqAA8BAAAAYwEACTqAAAAA...", // Base64编码的请求体（示例）
+        size: 821
+    },
+    {
+        // 请求模式: POST /mmtls/4e535ec4
+        // 出现次数: 9次，大小: [620, 702, 861, 1060, 1144, 1302, 1547, 1790, 3257]
+        method: "POST",
+        path: "/mmtls/4e535ec4",
+        body: "GfEEAKEAAACdAQTxAQCo0z/4LJQLyzKJ0iCUrcyRmcEfGQAGnlWMZs3GqF+HSaNp2Z72AAAAbwEAAABqAA8BAAAAYwEACTqAAAAA...", // Base64编码的请求体（示例）
+        size: 3257
+    },
+    {
+        // 请求模式: POST /mmtls/4e933a33
+        // 出现次数: 3次，大小: [813, 814, 4003]
+        method: "POST",
+        path: "/mmtls/4e933a33",
+        body: "GfEEAKEAAACdAQTxAQCoBfZMIeA1sdqQnr6iOgeJ6VPFlfitT1w+8aQdDKbmRhdp2Z/vAAAAbwEAAABqAA8BAAAAYwEACTqAAAAA...", // Base64编码的请求体（示例）
+        size: 814
+    },
+    {
+        // 请求模式: POST /mmtls/4e73aef6
+        // 出现次数: 3次，大小: [1564, 1952, 2712]
+        method: "POST",
+        path: "/mmtls/4e73aef6",
+        body: "GfEEAKEAAACdAQTxAQCoptwh5iUmIoGsPCDL1L2AVNk6KN0wuiKbrMxJcDVbbeFp2Z90AAAAbwEAAABqAA8BAAAAYwEACTqAAAAA...", // Base64编码的请求体（示例）
+        size: 2712
+    },
+    {
+        // 请求模式: POST /mmtls/4e88f81b
+        // 出现次数: 10次，大小: [703, 907, 909, 911, 1556]
+        method: "POST",
+        path: "/mmtls/4e88f81b",
+        body: "GfEEAKEAAACdAQTxAQCoEBomi13yFuJJUbixm8LOBJFW1+9bnByo3jHXnNp+pTRp2Z/HAAAAbwEAAABqAA8BAAAAYwEACTqAAAAA...", // Base64编码的请求体（示例）
+        size: 703
+    },
+    {
+        // 请求模式: POST /mmtls/4e64cf20
+        // 出现次数: 5次，大小: [803, 807, 821, 1146, 1522]
+        method: "POST",
+        path: "/mmtls/4e64cf20",
+        body: "GfEEAKEAAACdAQTxAQCozx+eh7BMQCojSkdSKaN06JH9erhmtx9C7Sh5yVlqyktp2Z86AAAAbwEAAABqAA8BAAAAYwEACTqAAAAA...", // Base64编码的请求体（示例）
+        size: 807
+    },
+    {
+        // 请求模式: POST /mmtls/4e736d4f
+        // 出现次数: 8次，大小: [802, 812, 818, 873, 1142, 1525, 4041]
+        method: "POST",
+        path: "/mmtls/4e736d4f",
+        body: "GfEEAKEAAACdAQTxAQCoYshv35NU5KMOEFv955fLPRppHfQCbBm8FOc6h0nJkcZp2Z9zAAAAbwEAAABqAA8BAAAAYwEACTqAAAAA...", // Base64编码的请求体（示例）
+        size: 1142
+    },
+    {
+        // 请求模式: POST /mmtls/4e74b592
+        // 出现次数: 1次，大小: [744]
+        method: "POST",
+        path: "/mmtls/4e74b592",
+        body: "GfEEAKEAAACdAQTxAQCoYtb1r+z4N4vtzAfjdC6HJU1I4hV7Ka8nLH0c/drf9SVp2Z94AAAAbwEAAABqAA8BAAAAYwEACTqAAAAA...", // Base64编码的请求体（示例）
+        size: 744
+    },
+    {
+        // 请求模式: POST /mmtls/4e4022d7
+        // 出现次数: 2次，大小: [685, 1567]
+        method: "POST",
+        path: "/mmtls/4e4022d7",
+        body: "GfEEAKEAAACdAQTxAQCoEELh3zDG2VUO9cpualKX0Z26JSOS7KGJTD4wCCPGgtxp2Z6rAAAAbwEAAABqAA8BAAAAYwEACTqAAAAA...", // Base64编码的请求体（示例）
+        size: 1567
+    },
+    {
+        // 请求模式: POST /mmtls/4e640a2b
+        // 出现次数: 5次，大小: [620, 702, 1060, 1305, 1789]
+        method: "POST",
+        path: "/mmtls/4e640a2b",
+        body: "GfEEAKEAAACdAQTxAQCorPBMT/DAfC52GEHEX1ilscJpcN9IfrHUgGvoCkM1v2hp2Z83AAAAbwEAAABqAA8BAAAAYwEACTqAAAAA...", // Base64编码的请求体（示例）
+        size: 1305
+    },
+    {
+        // 请求模式: POST /mmtls/4e4f85fb
+        // 出现次数: 1次，大小: [3065]
+        method: "POST",
+        path: "/mmtls/4e4f85fb",
+        body: "GfEEAKEAAACdAQTxAQColDv9wTRNCmMUQHrRCkr4Ss9A0EAIEodzsnUfvqh861Rp2Z7nAAAAbwEAAABqAA8BAAAAYwEACTqAAAAA...", // Base64编码的请求体（示例）
+        size: 3065
+    },
+    {
+        // 请求模式: POST /mmtls/4e92f88c
+        // 出现次数: 9次，大小: [620, 701, 873, 874, 1060, 1147, 1283, 1551, 1787]
+        method: "POST",
+        path: "/mmtls/4e92f88c",
+        body: "GfEEAKEAAACdAQTxAQCor1vYgCxWtvfxEiaHqA95ZHUCPMzEc3BZibH1DWGaHIhp2Z/uAAAAbwEAAABqAA8BAAAAYwEACTqAAAAA...", // Base64编码的请求体（示例）
+        size: 874
+    },
+    {
+        // 请求模式: POST /mmtls/4e732ba8
+        // 出现次数: 17次，大小: [609, 703, 814, 871, 872, 906, 908, 909, 910, 1060, 1556]
+        method: "POST",
+        path: "/mmtls/4e732ba8",
+        body: "GfEEAKEAAACdAQTxAQCos6kOH06jMv5/oSFn1bi/+xeCEvRKmU9B51RWdF+cOcBp2Z9yAAAAbwEAAABqAA8BAAAAYwEACTqAAAAA...", // Base64编码的请求体（示例）
+        size: 1060
+    },
+    {
+        // 请求模式: POST /mmtls/4e5630f1
+        // 出现次数: 1次，大小: [748]
+        method: "POST",
+        path: "/mmtls/4e5630f1",
+        body: "GfEEAKEAAACdAQTxAQCoREPT37Wh90/CsqMJPGI0BXMfro0Erc3Uw70IOtt2WBtp2Z8BAAAAbwEAAABqAA8BAAAAYwEACTqAAAAA...", // Base64编码的请求体（示例）
+        size: 748
+    },
+    {
+        // 请求模式: POST /mmtls/4e3c0867
+        // 出现次数: 3次，大小: [886, 943, 1004]
+        method: "POST",
+        path: "/mmtls/4e3c0867",
+        body: "GfEEAKEAAACdAQTxAQCoIFVVrz+5CpiA1N/QM23J3LgOTRiAHMix8HDgk6d+OpNp2Z6bAAAAbwEAAABqAA8BAAAAYwEACTqAAAAA...", // Base64编码的请求体（示例）
+        size: 943
+    },
+    {
+        // 请求模式: POST /mmtls/4e4beed9
+        // 出现次数: 1次，大小: [902]
+        method: "POST",
+        path: "/mmtls/4e4beed9",
+        body: "GfEEAKEAAACdAQTxAQCoEd2H1vdR2qJpY/5IKrPLnm1Uopg8vg2XTfG166z8gwdp2Z7ZAAAAbwEAAABqAA8BAAAAYwEACTqAAAAA...", // Base64编码的请求体（示例）
+        size: 902
+    },
+    {
+        // 请求模式: POST /mmtls/4e3d0f03
+        // 出现次数: 1次，大小: [9758]
+        method: "POST",
+        path: "/mmtls/4e3d0f03",
+        body: "GfEEAKEAAACdAQTxAQCoKoRULnHd6AS/cAfKLbWNmYCfBQ2pCRdY/32hwH9+bVVp2Z6fAAAAbwEAAABqAA8BAAAAYwEACTqAAAAA...", // Base64编码的请求体（示例）
+        size: 9758
+    },
+    {
+        // 请求模式: POST /mmtls/4e4ae83d
+        // 出现次数: 3次，大小: [1547, 1825, 2701]
+        method: "POST",
+        path: "/mmtls/4e4ae83d",
+        body: "GfEEAKEAAACdAQTxAQCoCdvOI8IDiMlaugDNeKrulsjr8gTgmM2jIzBATx+wAi1p2Z7VAAAAbwEAAABqAA8BAAAAYwEACTqAAAAA...", // Base64编码的请求体（示例）
+        size: 2701
+    },
+    {
+        // 请求模式: POST /mmtls/4e70597b
+        // 出现次数: 5次，大小: [620, 702, 1062, 1292, 1795]
+        method: "POST",
+        path: "/mmtls/4e70597b",
+        body: "GfEEAKEAAACdAQTxAQCovUYjOoV41mjFG46l7gCvrNVTL1dMBTTgiqEJ7oYiS3hp2Z9nAAAAbwEAAABqAA8BAAAAYwEACTqAAAAA...", // Base64编码的请求体（示例）
+        size: 1062
+    },
+    {
+        // 请求模式: POST /mmtls/4e65526e
+        // 出现次数: 1次，大小: [5195]
+        method: "POST",
+        path: "/mmtls/4e65526e",
+        body: "GfEEAKEAAACdAQTxAQCo0yENAzRHt78B/pMsw1uoO/5UC1TKbrGUDgb9unVXYh1p2Z88AAAAbwEAAABqAA8BAAAAYwEACTqAAAAA...", // Base64编码的请求体（示例）
+        size: 5195
+    },
+    {
+        // 请求模式: POST /mmtls/4e4a64ef
+        // 出现次数: 6次，大小: [609, 804, 809, 820, 870, 1524]
+        method: "POST",
+        path: "/mmtls/4e4a64ef",
+        body: "GfEEAKEAAACdAQTxAQCoxes5GF12HCkvQetpuZZwSZ0akRbkOZ52722qOMhjNA9p2Z7TAAAAbwEAAABqAA8BAAAAYwEACTqAAAAA...", // Base64编码的请求体（示例）
+        size: 609
+    },
+    {
+        // 请求模式: POST /mmtls/4e54e8ae
+        // 出现次数: 3次，大小: [1141, 1826, 2698]
+        method: "POST",
+        path: "/mmtls/4e54e8ae",
+        body: "GfEEAKEAAACdAQTxAQCorsjiPbPTi0bCE3OU1P6KOQs+xHsirkw+CXq84guMSS9p2Z78AAAAbwEAAABqAA8BAAAAYwEACTqAAAAA...", // Base64编码的请求体（示例）
+        size: 1826
+    },
+    {
+        // 请求模式: POST /mmtls/4e6510c7
+        // 出现次数: 3次，大小: [1554, 1942, 2694]
+        method: "POST",
+        path: "/mmtls/4e6510c7",
+        body: "GfEEAKEAAACdAQTxAQCog7g5pZk98Z648sFf5+49f7Y34B/KVdUF6SpxCD3xLJpp2Z87AAAAbwEAAABqAA8BAAAAYwEACTqAAAAA...", // Base64编码的请求体（示例）
+        size: 2694
+    },
+    {
+        // 请求模式: POST /mmtls/4e648d79
+        // 出现次数: 1次，大小: [609]
+        method: "POST",
+        path: "/mmtls/4e648d79",
+        body: "GfEEAKEAAACdAQTxAQCoDblgZUaqirIEPMyf7v/OtTYsNJVX5dFPsdCYkn485Hxp2Z85AAAAbwEAAABqAA8BAAAAYwEACTqAAAAA...", // Base64编码的请求体（示例）
+        size: 609
+    },
+    {
+        // 请求模式: POST /mmtls/4e7d2c19
+        // 出现次数: 1次，大小: [1562]
+        method: "POST",
+        path: "/mmtls/4e7d2c19",
+        body: "GfEEAKEAAACdAQTxAQCoEljeftFvLOne+N1XHS36jUJDci58Bpbpu9K13SIb/Slp2Z+ZAAAAbwEAAABqAA8BAAAAYwEACTqAAAAA...", // Base64编码的请求体（示例）
+        size: 1562
+    },
+    {
+        // 请求模式: POST /mmtls/4e897b69
+        // 出现次数: 1次，大小: [1148]
+        method: "POST",
+        path: "/mmtls/4e897b69",
+        body: "GfEEAKEAAACdAQTxAQCoOEvxr/7RaEAEM75eZI8ruAOV6xKtCeOsNCE/mwdJvO9p2Z/JAAAAbwEAAABqAA8BAAAAYwEACTqAAAAA...", // Base64编码的请求体（示例）
+        size: 1148
+    },
+    {
+        // 请求模式: POST /mmtls/4e7eb603
+        // 出现次数: 1次，大小: [4794]
+        method: "POST",
+        path: "/mmtls/4e7eb603",
+        body: "GfEEAKEAAACdAQTxAQCotgyXiRM7lvHSxjFp0s9rf173gdcyi11lKRnDk7isZzlp2Z+fAAAAbwEAAABqAA8BAAAAYwEACTqAAAAA...", // Base64编码的请求体（示例）
+        size: 4794
+    },
+    {
+        // 请求模式: POST /mmtls/4e63c884
+        // 出现次数: 2次，大小: [1144, 1544]
+        method: "POST",
+        path: "/mmtls/4e63c884",
+        body: "GfEEAKEAAACdAQTxAQCosVNT32HchI83zlrgoMu0Z6HtHJBQ7EQAPm6OXGLzg11p2Z82AAAAbwEAAABqAA8BAAAAYwEACTqAAAAA...", // Base64编码的请求体（示例）
+        size: 1544
+    },
+    {
+        // 请求模式: POST /mmtls/4e49e1a1
+        // 出现次数: 1次，大小: [4511]
+        method: "POST",
+        path: "/mmtls/4e49e1a1",
+        body: "GfEEAKEAAACdAQTxAQCovZzI+j+F1ZQz0Vq5SkQ8iMx63Xh2wMp/XQLI19IL+lxp2Z7RAAAAbwEAAABqAA8BAAAAYwEACTqAAAAA...", // Base64编码的请求体（示例）
+        size: 4511
+    },
+    {
+        // 请求模式: POST /mmtls/4e4aa696
+        // 出现次数: 2次，大小: [812, 1144]
+        method: "POST",
+        path: "/mmtls/4e4aa696",
+        body: "GfEEAKEAAACdAQTxAQCoP/faNYDekLq4PxH9RTMV4YVIgjFMUoxHmFKydPzwov5p2Z7UAAAAbwEAAABqAA8BAAAAYwEACTqAAAAA...", // Base64编码的请求体（示例）
+        size: 1144
+    },
+    {
+        // 请求模式: POST /mmtls/4e4857b7
+        // 出现次数: 2次，大小: [1143, 1566]
+        method: "POST",
+        path: "/mmtls/4e4857b7",
+        body: "GfEEAKEAAACdAQTxAQCo+z3U2m34TqW2+VykcUkSa7R5P8Bm7xbNJqm04Bw1fNtp2Z7LAAAAbwEAAABqAA8BAAAAYwEACTqAAAAA...", // Base64编码的请求体（示例）
+        size: 1566
+    },
+    {
+        // 请求模式: POST /mmtls/4e3b4372
+        // 出现次数: 3次，大小: [898, 1005, 10032]
+        method: "POST",
+        path: "/mmtls/4e3b4372",
+        body: "GfEEAKEAAACdAQTxAQCoN97//L1KUbJLgDjWg3aWNLwtkRday3IrOD4AeG6NQyZp2Z6YAAAAbwEAAABqAA8BAAAAYwEACTqAAAAA...", // Base64编码的请求体（示例）
+        size: 1005
+    },
+    {
+        // 请求模式: POST /mmtls/4e71a1be
+        // 出现次数: 1次，大小: [703]
+        method: "POST",
+        path: "/mmtls/4e71a1be",
+        body: "GfEEAKEAAACdAQTxAQCoyWHrnyIrE3pN3BW12egjvZ4Ncn2ycAI2gGSHh+3dFDZp2Z9sAAAAbwEAAABqAA8BAAAAYwEACTqAAAAA...", // Base64编码的请求体（示例）
+        size: 703
+    },
+    {
+        // 请求模式: POST /mmtls/4e803fed
+        // 出现次数: 1次，大小: [762]
+        method: "POST",
+        path: "/mmtls/4e803fed",
+        body: "GfEEAKEAAACdAQTxAQCoHoc5Y7eXJt4XRJbRo2R7RJ6FC/yeT8qO3v1kPxFgLfZp2Z+lAAAAbwEAAABqAA8BAAAAYwEACTqAAAAA...", // Base64编码的请求体（示例）
+        size: 762
+    },
+    {
+        // 请求模式: POST /mmtls/4e89bd10
+        // 出现次数: 3次，大小: [1552, 1935, 2691]
+        method: "POST",
+        path: "/mmtls/4e89bd10",
+        body: "GfEEAKEAAACdAQTxAQColDJ6hSUedRTLw7+KRrCah9VCKa9ZAoGdwm6wo5YsYNRp2Z/KAAAAbwEAAABqAA8BAAAAYwEACTqAAAAA...", // Base64编码的请求体（示例）
+        size: 1935
+    },
+    {
+        // 请求模式: POST /mmtls/4e5ee91f
+        // 出现次数: 1次，大小: [1270]
+        method: "POST",
+        path: "/mmtls/4e5ee91f",
+        body: "GfEEAKEAAACdAQTxAQCoQTiK0y9bnIVvcj4RqgFDVYgOZS4tR8WZR4W3pP2bMpdp2Z8jAAAAbwEAAABqAA8BAAAAYwEACTqAAAAA...", // Base64编码的请求体（示例）
+        size: 1270
+    },
+    {
+        // 请求模式: POST /mmtls/4e7017d4
+        // 出现次数: 2次，大小: [1151, 1554]
+        method: "POST",
+        path: "/mmtls/4e7017d4",
+        body: "GfEEAKEAAACdAQTxAQCoq2Y748opAIjvhVOVW+j82VOP3NRewFaQYi4JgrtTZyJp2Z9mAAAAbwEAAABqAA8BAAAAYwEACTqAAAAA...", // Base64编码的请求体（示例）
+        size: 1151
+    },
+    {
+        // 请求模式: POST /mmtls/4e8d128b
+        // 出现次数: 1次，大小: [1526]
+        method: "POST",
+        path: "/mmtls/4e8d128b",
+        body: "GfEEAKEAAACdAQTxAQCo0YiuociWg/ueTXedzpmJ8n+1b6+XfCPDAQhFtMDAABNp2Z/XAAAAbwEAAABqAA8BAAAAYwEACTqAAAAA...", // Base64编码的请求体（示例）
+        size: 1526
+    },
+    {
+        // 请求模式: POST /mmtls/4e3ccd5c
+        // 出现次数: 1次，大小: [743]
+        method: "POST",
+        path: "/mmtls/4e3ccd5c",
+        body: "GfEEAKEAAACdAQTxAQCoYM8zi/3pNO2CcFG7YaG0zZGHrcrspuyfUPaRnT2Z2llp2Z6eAAAAbwEAAABqAA8BAAAAYwEACTqAAAAA...", // Base64编码的请求体（示例）
+        size: 743
+    },
+    {
+        // 请求模式: POST /mmtls/4e3fe130
+        // 出现次数: 3次，大小: [1138, 1958, 2712]
+        method: "POST",
+        path: "/mmtls/4e3fe130",
+        body: "GfEEAKEAAACdAQTxAQCoW+x6taF2j6JHdejY+1oKMyF+zRA1/B61kpDdu76kHQpp2Z6qAAAAbwEAAABqAA8BAAAAYwEACTqAAAAA...", // Base64编码的请求体（示例）
+        size: 1138
+    },
+    {
+        // 请求模式: POST /mmtls/4e89feb7
+        // 出现次数: 1次，大小: [741]
+        method: "POST",
+        path: "/mmtls/4e89feb7",
+        body: "GfEEAKEAAACdAQTxAQCopigS5O1Z4N0yFX8iBctLMf3/OH9w9MwmPPlTlm4BvrFp2Z/LAAAAbwEAAABqAA8BAAAAYwEACTqAAAAA...", // Base64编码的请求体（示例）
+        size: 741
+    },
+    {
+        // 请求模式: POST /mmtls/4e763f7c
+        // 出现次数: 1次，大小: [487]
+        method: "POST",
+        path: "/mmtls/4e763f7c",
+        body: "GfEEAKEAAACdAQTxAQCoJDsexnLZs4E05zzGlN2nuAL1OBz3nmQW/2xFm7IsLpVp2Z9+AAAAbwEAAABqAA8BAAAAYwEACTqAAAAA...", // Base64编码的请求体（示例）
+        size: 487
+    },
+    {
+        // 请求模式: POST /mmtls/4e8560f9
+        // 出现次数: 1次，大小: [685]
+        method: "POST",
+        path: "/mmtls/4e8560f9",
+        body: "GfEEAKEAAACdAQTxAQCo/J2MLVEY64CSvxOD+whmtnzJV2pALrZZInwMT0laR6Np2Z+5AAAAbwEAAABqAA8BAAAAYwEACTqAAAAA...", // Base64编码的请求体（示例）
+        size: 685
+    },
+    {
+        // 请求模式: POST /mmtls/4e552a55
+        // 出现次数: 1次，大小: [1544]
+        method: "POST",
+        path: "/mmtls/4e552a55",
+        body: "GfEEAKEAAACdAQTxAQCoPVrMNmyDGBODjzQ2AqOjhSxhrwAR5LccySpnfF9Q3txp2Z79AAAAbwEAAABqAA8BAAAAYwEACTqAAAAA...", // Base64编码的请求体（示例）
+        size: 1544
+    },
+    {
+        // 请求模式: POST /mmtls/4e40a625
+        // 出现次数: 1次，大小: [4744]
+        method: "POST",
+        path: "/mmtls/4e40a625",
+        body: "GfEEAKEAAACdAQTxAQCoxnq8zKore71/RDDvMQgB+mDFeh/YWnv3OF8Bdh+F2Jlp2Z6tAAAAbwEAAABqAA8BAAAAYwEACTqAAAAA...", // Base64编码的请求体（示例）
+        size: 4744
+    },
+    {
+        // 请求模式: POST /mmtls/4e6e4c43
+        // 出现次数: 1次，大小: [2761]
+        method: "POST",
+        path: "/mmtls/4e6e4c43",
+        body: "GfEEAKEAAACdAQTxAQCo4l85nsTHlCjiYPpdok+GOeM0zpeI6+ikLHCKlwyHn2Jp2Z9fAAAAbwEAAABqAA8BAAAAYwEACTqAAAAA...", // Base64编码的请求体（示例）
+        size: 2761
+    },
+];
+
+// 签到执行函数
+async function executeCheckin() {
+    log("开始执行天天象棋签到");
+    
+    let successCount = 0;
+    let failCount = 0;
+    
+    for (let i = 0; i < REQUEST_TEMPLATES.length; i++) {
+        const template = REQUEST_TEMPLATES[i];
+        
+        try {
+            log(`执行请求 ${i + 1}/${REQUEST_TEMPLATES.length}: ${template.method} ${template.path}`);
+            
+            const url = `https://${API_CONFIG.host}${template.path}`;
+            
+            const requestConfig = {
+                url: url,
+                method: template.method,
+                headers: { ...API_CONFIG.headers },
+                timeout: 10000
+            };
+            
+            // 如果有请求体，添加
+            if (template.body) {
+                try {
+                    // Base64解码请求体
+                    const bodyBytes = $base64.decode(template.body);
+                    requestConfig.bodyBytes = bodyBytes;
+                } catch (e) {
+                    log(`请求体Base64解码失败: ${e}`);
+                    requestConfig.body = template.body;
+                }
+            }
+            
+            const response = await $.http.request(requestConfig);
+            
+            if (response.statusCode >= 200 && response.statusCode < 300) {
+                log(`请求 ${i + 1} 成功: ${response.statusCode}`);
+                successCount++;
+                
+                // 尝试解析响应
+                try {
+                    const respText = response.body;
+                    if (respText && respText.length > 0) {
+                        log(`响应长度: ${respText.length}字节`);
+                        // 可以在这里添加响应解析逻辑
+                    }
+                } catch (e) {
+                    // 忽略解析错误
+                }
+            } else {
+                log(`请求 ${i + 1} 失败: ${response.statusCode}`);
+                failCount++;
+            }
+            
+        } catch (error) {
+            log(`请求 ${i + 1} 异常: ${error}`);
+            failCount++;
+        }
+        
+        // 请求之间稍作延迟
+        if (i < REQUEST_TEMPLATES.length - 1) {
+            await $.wait(1000);
+        }
+    }
+    
+    return {
+        success: successCount,
+        failed: failCount,
+        total: REQUEST_TEMPLATES.length
+    };
+}
+
+// 主函数
+async function main() {
+    log("天天象棋自动签到插件启动");
+    
+    const result = await executeCheckin();
+    
+    log(`签到完成: 成功 ${result.success} 个, 失败 ${result.failed} 个, 总计 ${result.total} 个请求`);
+    
+    // 生成通知消息
+    let message = `天天象棋签到完成\n`;
+    message += `成功: ${result.success} 个请求\n`;
+    message += `失败: ${result.failed} 个请求\n`;
+    message += `总计: ${result.total} 个请求`;
+    
+    // 发送通知
+    $.msg("天天象棋签到", `完成 ${result.success}/${result.total}`, message);
+    
+    return result;
+}
+
+// LOON插件接口
+if (typeof $argument !== "undefined") {
+    // 通过参数触发
+    main().then(result => {
+        $done({});
+    }).catch(error => {
+        log(`插件执行错误: ${error}`);
+        $.msg("天天象棋签到", "执行错误", String(error));
+        $done({});
+    });
+} else {
+    // 通过定时任务触发
+    exports.cron = "0 9 * * *"; // 每天上午9点执行
+    exports.handler = main;
+}
+
+// 工具函数
+function decodeBase64(str) {
+    try {
+        return $base64.decode(str);
+    } catch (e) {
+        return str;
+    }
+}

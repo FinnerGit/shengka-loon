@@ -1,0 +1,22 @@
+{
+  "name": "ttxq-autocheckin",
+  "version": "1.0.0",
+  "description": "天天象棋自动签到LOON插件",
+  "main": "TTXQ_AutoCheckin.js",
+  "scripts": {
+    "test": "echo '需要在实际环境中测试'"
+  },
+  "keywords": [
+    "loon",
+    "plugin",
+    "chess",
+    "checkin",
+    "wechat"
+  ],
+  "author": "Generated from capture data",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/FinnerGit/shengka-loon.git"
+  }
+}
