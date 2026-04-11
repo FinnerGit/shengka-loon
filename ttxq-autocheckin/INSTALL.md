@@ -1,41 +1,89 @@
 # 天天象棋自动签到插件安装指南
 
 ## 文件说明
-1. `TTXQ_AutoCheckin_Improved.plugin` - 主插件文件（推荐）
-2. `TTXQ_AutoCheckin.plugin` - 原始插件文件（包含所有请求）
-3. `TTXQ_AutoCheckin.js` - JavaScript脚本文件
+1. `TTXQ_Loon.plugin` - **主插件文件**（必须使用这个）
+2. `TTXQ_AutoCheckin_Loon.js` - 主脚本文件（由插件引用）
+3. `TTXQ_AutoCheckin.js` - 简化版脚本文件
 4. `TTXQ_Config.conf` - LOON配置文件示例
 
-## 安装方法
+## 安装方法（最简单）
 
-### 方法一：安装插件（推荐）
+### 方法一：直接安装插件（推荐）
 1. 打开LOON应用
 2. 进入「插件」页面
 3. 点击右上角「+」添加插件
-4. 粘贴插件URL（部署到GitHub后）或导入本地文件
-5. 插件将每天上午9点自动执行
+4. 粘贴以下URL：
+   ```
+   https://raw.githubusercontent.com/FinnerGit/shengka-loon/main/ttxq-autocheckin/TTXQ_Loon.plugin
+   ```
+5. 插件会自动配置定时任务和MITM
 
-### 方法二：配置脚本
-1. 编辑LOON配置文件
-2. 添加以下内容：
+### 方法二：手动配置
+如果你喜欢手动配置，可以将以下内容添加到LOON配置文件：
 
-```
+```ini
 [Script]
-# 定时执行
-cron "0 9 * * *" script-path=https://raw.githubusercontent.com/FinnerGit/shengka-loon/main/TTXQ_AutoCheckin.js, timeout=60, tag=天天象棋签到
+# 定时执行：每天上午9点
+cron "0 9 * * *" script-path=https://raw.githubusercontent.com/FinnerGit/shengka-loon/main/ttxq-autocheckin/TTXQ_AutoCheckin_Loon.js, timeout=120, tag=天天象棋自动签到, enable=true
 
-# 或使用HTTP-Response拦截
-# pattern = https?://szextshort\.weixin\.qq\.com/mmts/, tag=天天象棋API, script-path=https://raw.githubusercontent.com/FinnerGit/shengka-loon/main/TTXQ_AutoCheckin.js
+# HTTP响应拦截（可选）
+http-response ^https?:\/\/szextshort\.weixin\.qq\.com\/mmtls\/ script-path=https://raw.githubusercontent.com/FinnerGit/shengka-loon/main/ttxq-autocheckin/TTXQ_AutoCheckin_Loon.js, requires-body=true, timeout=120, tag=天天象棋API拦截
 
 [MITM]
+# 需要MITM的主机
 hostname = szextshort.weixin.qq.com, szminorshort.weixin.qq.com
 ```
 
-## 注意事项
-1. 需要启用MITM并信任证书
-2. 首次使用建议开启调试模式
-3. 如果签到失败，请检查日志
-4. 请求体基于实际抓包，可能需要定期更新
+## 配置说明
 
-## 手动测试
-在LOON插件页面，点击插件右侧的「▶」按钮手动执行测试。
+### 定时任务
+- 默认时间：每天上午9:00
+- 可修改：在插件中编辑cron表达式
+- 例如：`"0 9 * * *"` 表示每天9:00
+
+### MITM配置
+插件已自动配置以下主机：
+- `szextshort.weixin.qq.com`
+- `szminorshort.weixin.qq.com`
+
+请确保LOON的MITM功能已启用，并信任相关证书。
+
+## 首次使用步骤
+
+1. **安装插件**：使用方法一安装 `TTXQ_Loon.plugin`
+2. **启用MITM**：确保LOON的MITM功能已开启
+3. **信任证书**：在系统设置中信任LOON的证书
+4. **测试执行**：在插件页面点击「▶」手动测试
+5. **查看日志**：在LOON日志面板查看执行情况
+
+## 常见问题
+
+### 1. 插件安装后无法运行
+- 确保安装的是 `TTXQ_Loon.plugin`，不是 `.js` 文件
+- 检查MITM是否已启用
+- 查看LOON日志获取详细错误信息
+
+### 2. 签到失败
+- 检查网络连接
+- 确认微信小程序正常运行
+- 查看请求日志，确认请求是否发送成功
+
+### 3. 如何修改执行时间
+- 编辑插件，修改cron表达式
+- 例如：`"0 12 * * *"` 表示每天中午12点
+
+### 4. 如何查看执行日志
+- 打开LOON应用
+- 进入「日志」页面
+- 筛选标签为「天天象棋自动签到」
+
+## 高级配置
+
+### 自定义请求
+如果需要修改请求参数，可以编辑 `TTXQ_AutoCheckin_Loon.js` 文件中的 `CHECKIN_REQUESTS` 数组。
+
+### 调试模式
+默认开启调试模式，会在日志中显示详细信息。如需关闭，修改 `DEBUG = false`。
+
+## 技术支持
+如有问题，请查看GitHub仓库的Issues页面或提交新问题。
