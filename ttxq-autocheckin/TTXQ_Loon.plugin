@@ -1,7 +1,6 @@
 #!name=天天象棋自动签到
 #!desc=自动领取天天象棋每日签到和多个奖励（基于抓包记录生成）
 #!author=Generated from capture
-#!icon=https://raw.githubusercontent.com/FinnerGit/shengka-loon/main/ttxq-autocheckin/chess.png
 #!system=ios
 #!homepage=https://github.com/FinnerGit/shengka-loon
 
